@@ -9,9 +9,9 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import com.unity3d.player.UnityPlayer;
-import com.unity3d.player.UnityPlayerNativeActivity;
+import com.unity3d.player.UnityPlayerActivity;
 
-public class NemoActivity extends UnityPlayerNativeActivity
+public class NemoActivity extends UnityPlayerActivity
 {
 	public enum NemoActivityEvent
 	{
@@ -24,7 +24,7 @@ public class NemoActivity extends UnityPlayerNativeActivity
 	
 	private String		ListenerGameObject = "";
 	private String		ListenerFunction = "";
-	private boolean		inited = false;
+	private boolean		inited = false, onStartCalled = false;
 	private Bundle		CurrentBundle;
 	private ArrayList<NemoActivityListener>		ActivityListeners;
 	
@@ -50,10 +50,18 @@ public class NemoActivity extends UnityPlayerNativeActivity
 		this.inited = true;
 	}
 	
-	public void		RegisterActivityListener(NemoActivityListener listener)
+	public void		RegisterActivityListener(final NemoActivityListener listener)
 	{
 		ActivityListeners.add(listener);
-		listener.onRegistered(CurrentBundle);
+		this.runOnUiThread(new Runnable() 
+		{
+			@Override
+			public void run() 
+			{
+				listener.onRegistered(CurrentBundle);
+				if (onStartCalled) listener.onStart();
+			}
+		});
 	}
 	
 	//------------- Activity Implementations
@@ -64,6 +72,7 @@ public class NemoActivity extends UnityPlayerNativeActivity
 		_instance = this;
 		CurrentBundle = bundle;
 		ActivityListeners = new ArrayList<NemoActivityListener>();
+		onStartCalled = false;
 		super.onCreate(bundle);
 		
 		for (int i = 0; i < ActivityListeners.size(); i++) ActivityListeners.get(i).onRegistered(CurrentBundle);
@@ -73,6 +82,7 @@ public class NemoActivity extends UnityPlayerNativeActivity
 	protected void	onStart()
 	{
 		super.onStart();
+		onStartCalled = true;
 		for (int i = 0; i < ActivityListeners.size(); i++) ActivityListeners.get(i).onStart();
 	}
 
